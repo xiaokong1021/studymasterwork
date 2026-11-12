@@ -9,3 +9,7 @@ test-results/
 playwright-report/
 *.log
 .DS_Store
+desktop-package/
+.desktop-package-*/
+release/
+artifacts/

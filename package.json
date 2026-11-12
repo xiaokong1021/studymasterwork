@@ -1,6 +1,6 @@
 {
   "name": "study-work",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,7 +12,12 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "start": "tsx server/index.ts",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "desktop:build": "npm run build && node scripts/build-desktop.mjs",
+    "desktop:dev": "npm run desktop:build && electron desktop-package",
+    "desktop:pack": "npm run desktop:build && electron-builder --mac --dir",
+    "desktop:dmg": "npm run desktop:build && electron-builder --mac dmg --arm64",
+    "test:desktop": "node scripts/smoke-desktop.mjs"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
@@ -22,18 +27,23 @@
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "yaml": "^2.9.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "concurrently": "^9.2.1",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2",
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
-    "vite": "^7.2.2",
-    "@playwright/test": "^1.56.1"
-  }
+    "vite": "^7.2.2"
+  },
+  "description": "Study Work AI workspace for macOS"
 }

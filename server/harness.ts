@@ -94,7 +94,10 @@ export class RunError extends Error {
 export interface HarnessOptions {
   apiKey?: string;
   model?: string;
+  availableModels?: string[];
   baseUrl?: string;
+  providerSource?: "environment" | "harness" | "demo";
+  providerName?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   demoDelayMs?: number;
@@ -226,6 +229,7 @@ const delay = (ms: number, signal: AbortSignal) =>
 export class Harness {
   readonly active = new Map<string, Active>();
   readonly model: string;
+  readonly availableModels: string[];
   readonly apiKey: string;
   readonly endpoint: string;
   private fetcher: typeof fetch;
@@ -235,6 +239,7 @@ export class Harness {
   ) {
     this.apiKey = options.apiKey?.trim() ?? "";
     this.model = options.model?.trim() || "deepseek-flash";
+    this.availableModels = [...new Set([this.model, ...(options.availableModels ?? [])])];
     const base = new URL(options.baseUrl?.trim() || "https://api.deepseek.com");
     if (
       base.username ||
@@ -256,6 +261,9 @@ export class Harness {
       configured: Boolean(this.apiKey),
       mode: this.apiKey ? ("live" as const) : ("demo" as const),
       model: this.model,
+      models: this.availableModels,
+      source: this.apiKey ? (this.options.providerSource ?? "environment") : ("demo" as const),
+      name: this.apiKey ? this.options.providerName : undefined,
     };
   }
   assertRunnable(taskId: string, input: RunInput) {
@@ -265,6 +273,8 @@ export class Harness {
       throw new RunError(400, "任务内容需为 1 至 20000 字符");
     if (this.active.has(taskId) || task.status === "running")
       throw new RunError(409, "任务正在运行，请等待完成或先停止");
+    if (input.modelId && !this.availableModels.includes(input.modelId))
+      throw new RunError(400, "所选模型未在当前供应商中配置，请刷新后重试。");
     if (input.skillId && !skills.some((skill) => skill.id === input.skillId))
       throw new RunError(400, "技能不存在");
     for (const fileId of input.fileIds ?? []) {
@@ -299,6 +309,8 @@ export class Harness {
         content: input.prompt,
         fileIds: [...new Set(input.fileIds ?? [])],
         skillId: input.skillId,
+        modelId: input.modelId || this.model,
+        reasoning: input.reasoning ?? (input.model === "thinking" ? "high" : "off"),
         createdAt,
       },
       assistant,
@@ -565,7 +577,7 @@ export class Harness {
           502,
           "已达到模型上下文预算，请缩小资料或任务范围后重试。",
         );
-      const thinking = input.model === "thinking";
+      const thinking = input.reasoning ? input.reasoning === "high" : input.model === "thinking";
       const generating = step(
         round === 0
           ? "DeepSeek 正在处理任务"
@@ -580,7 +592,7 @@ export class Harness {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: this.model,
+            model: input.modelId || this.model,
             messages,
             tools: providerTools,
             stream: true,

@@ -1,5 +1,6 @@
 export type RunStatus = "idle" | "running" | "completed" | "failed" | "stopped";
 export type ModelMode = "auto" | "fast" | "thinking";
+export type ReasoningLevel = "off" | "high";
 export interface Step {
   id: string;
   label: string;
@@ -19,6 +20,8 @@ export interface Message {
   durationMs?: number;
   demo?: boolean;
   error?: string;
+  modelId?: string;
+  reasoning?: ReasoningLevel;
 }
 export interface Task {
   id: string;
@@ -62,6 +65,9 @@ export interface ProviderInfo {
   mode: "demo" | "live";
   model: string;
   configured: boolean;
+  source?: "environment" | "harness" | "demo";
+  name?: string;
+  models?: string[];
 }
 export interface Bootstrap {
   tasks: Task[];
@@ -75,6 +81,8 @@ export interface RunInput {
   skillId?: string;
   fileIds?: string[];
   model?: ModelMode;
+  modelId?: string;
+  reasoning?: ReasoningLevel;
 }
 export type RunEvent =
   | { type: "task"; task: Task }

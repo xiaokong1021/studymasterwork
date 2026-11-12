@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
   Check,
@@ -12,19 +12,26 @@ import {
   X,
 } from "lucide-react";
 import type {
-  ModelMode,
+  ProviderInfo,
+  ReasoningLevel,
   RunInput,
   Skill,
   WorkspaceFile,
 } from "../../shared/types";
 import { Dialog } from "./Dialog";
 import { api } from "../api";
+import { ModelPicker } from "./ModelPicker";
+
+function storedChoice(key: string) {
+  try { return localStorage.getItem(key) ?? ""; } catch { return ""; }
+}
 
 export function Composer({
   value,
   onChange,
   skills,
   files,
+  provider,
   skillId,
   onSkill,
   running,
@@ -38,6 +45,7 @@ export function Composer({
   onChange: (value: string) => void;
   skills: Skill[];
   files: WorkspaceFile[];
+  provider: ProviderInfo;
   skillId: string;
   onSkill: (id: string) => void;
   running: boolean;
@@ -48,7 +56,17 @@ export function Composer({
   notify: (text: string) => void;
 }) {
   const [attachments, setAttachments] = useState<string[]>([]);
-  const [model, setModel] = useState<ModelMode>("auto");
+  const models = provider.models?.length ? provider.models : [provider.model];
+  const [chosenModel, setChosenModel] = useState(() => storedChoice("study-work:model"));
+  const modelId = models.includes(chosenModel) ? chosenModel : provider.model;
+  const [reasoning, setReasoning] = useState<ReasoningLevel>(() =>
+    storedChoice("study-work:reasoning") === "high" ? "high" : "off");
+  useEffect(() => {
+    try {
+      localStorage.setItem("study-work:model", modelId);
+      localStorage.setItem("study-work:reasoning", reasoning);
+    } catch { /* Preferences remain usable when browser storage is unavailable. */ }
+  }, [modelId, reasoning]);
   const [picker, setPicker] = useState<
     "files" | "skills" | "permissions" | null
   >(null);
@@ -65,7 +83,8 @@ export function Composer({
         prompt: value.trim(),
         fileIds: attachedFiles.map((f) => f.id),
         skillId: skillId || undefined,
-        model,
+        modelId,
+        reasoning,
       })
     ) {
       setAttachments([]);
@@ -194,18 +213,8 @@ export function Composer({
             </button>
           </div>
           <div className="composer-actions">
-            <label className="model-select">
-              <select
-                value={model}
-                aria-label="选择模型模式"
-                onChange={(event) => setModel(event.target.value as ModelMode)}
-              >
-                <option value="auto">Auto</option>
-                <option value="fast">快速回答</option>
-                <option value="thinking">深度思考</option>
-              </select>
-              <ChevronDown size={12} />
-            </label>
+            <ModelPicker models={models} modelId={modelId} reasoning={reasoning}
+              onModel={setChosenModel} onReasoning={setReasoning} disabled={disabled || running} />
             {running ? (
               <button
                 className="send-button stopping"

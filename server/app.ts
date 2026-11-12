@@ -2,6 +2,7 @@ import express from "express";
 import type { ErrorRequestHandler, Request, Response } from "express";
 import path from "node:path";
 import { existsSync } from "node:fs";
+import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { Automation, RunInput } from "../shared/types.ts";
 import {
@@ -23,6 +24,8 @@ const runSchema = z
     skillId: stringId.optional(),
     fileIds: z.array(stringId).max(20).optional(),
     model: z.enum(["auto", "fast", "thinking"]).optional(),
+    modelId: z.string().trim().min(1).max(200).optional(),
+    reasoning: z.enum(["off", "high"]).optional(),
   })
   .strict();
 const automationSchema = z
@@ -42,6 +45,7 @@ export interface AppOptions extends HarnessOptions {
   dataDir?: string;
   staticDir?: string;
   schedulerIntervalMs?: number;
+  accessToken?: string;
 }
 
 /** Construct an isolated local workspace server. app.locals.close() stops all work and the scheduler. */
@@ -54,6 +58,20 @@ export function createApp(options: AppOptions = {}) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     next();
   });
+  if (options.accessToken) {
+    const expected = Buffer.from(options.accessToken);
+    app.use((req, res, next) => {
+      res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+      res.setHeader("X-Frame-Options", "DENY");
+      res.setHeader("Referrer-Policy", "no-referrer");
+      const supplied = Buffer.from(req.get("X-Study-Work-Token") ?? "");
+      if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+        res.status(401).json({ error: "请从 Study Work 桌面应用访问" });
+        return;
+      }
+      next();
+    });
+  }
   app.use("/api", (req, res, next) => {
     res.setHeader("Cache-Control", "no-store");
     try {

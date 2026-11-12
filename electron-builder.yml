@@ -1,0 +1,45 @@
+appId: com.studymaster.work
+productName: Study Work
+directories:
+  app: desktop-package
+  buildResources: build
+  output: release
+files:
+  - main.cjs
+  - package.json
+  - web/**/*
+  - '!node_modules/**/*'
+asar: true
+npmRebuild: false
+electronDist: node_modules/electron/dist
+afterPack: scripts/build-desktop.mjs
+publish: null
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+  category: public.app-category.productivity
+  minimumSystemVersion: '13.0'
+  icon: build/icon.icns
+  identity: '-'
+  notarize: false
+  gatekeeperAssess: false
+  artifactName: Study-Work-${version}-mac-${arch}.${ext}
+dmg:
+  title: Study Work
+  background: build/dmg-background.png
+  icon: build/icon.icns
+  iconSize: 100
+  iconTextSize: 14
+  window:
+    width: 660
+    height: 440
+  contents:
+    - x: 170
+      y: 220
+      type: file
+    - x: 490
+      y: 220
+      type: link
+      path: /Applications

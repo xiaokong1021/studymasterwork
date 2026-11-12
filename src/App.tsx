@@ -280,6 +280,8 @@ export default function App() {
         prompt: previous.content,
         skillId: previous.skillId,
         fileIds: previous.fileIds,
+        modelId: previous.modelId,
+        reasoning: previous.reasoning,
       });
   };
   const startTemplate = (prompt: string, chosenSkill?: string) => {
@@ -501,6 +503,7 @@ export default function App() {
                   setDrafts((current) => ({ ...current, [draftKey]: text }))
                 }
                 skills={data.skills}
+                provider={data.provider}
                 files={data.files.filter(
                   (file) => file.kind === "upload" || file.taskId === activeId,
                 )}

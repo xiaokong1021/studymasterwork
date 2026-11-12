@@ -1038,6 +1038,16 @@ function SettingsPage({ data, refresh, notify }: Props) {
             <dd>{data.provider.model || "尚未指定"}</dd>
           </div>
           <div>
+            <dt>配置来源</dt>
+            <dd>
+              {data.provider.source === "harness"
+                ? `本机 DeepSeek Harness${data.provider.name ? ` · ${data.provider.name}` : ""}`
+                : data.provider.configured
+                  ? "项目环境配置"
+                  : "尚未连接"}
+            </dd>
+          </div>
+          <div>
             <dt>服务端密钥</dt>
             <dd>{data.provider.configured ? "已配置" : "未配置"}</dd>
           </div>
@@ -1058,19 +1068,26 @@ function SettingsPage({ data, refresh, notify }: Props) {
       </div>
       <div className="settings-section">
         <h2>连接 DeepSeek</h2>
-        <ol className="settings-instructions">
-          <li>
-            在项目根目录创建或编辑 <code>.env</code> 文件，填入你的服务端配置。
-          </li>
-          <li>
-            <pre>
-              {"DEEPSEEK_API_KEY=你的 API 密钥\nDEEPSEEK_MODEL=deepseek-flash"}
-            </pre>
-          </li>
-          <li>重新启动本地服务，然后点击上方的「刷新配置状态」。</li>
-        </ol>
         <p className="settings-description">
-          密钥仅保存在服务端环境文件中。请妥善保存，避免提交到代码仓库或分享给他人。
+          已在 CC Switch 中配置 DeepSeek Harness？工作台会在启动时读取本机配置，复用供应商和密钥，优先使用 DeepSeek Flash。修改配置后，重启本地服务即可生效。
+        </p>
+        <p className="settings-description">
+          桌面版可在屏幕顶部的「Study Work」菜单中编辑模型配置、重新载入配置，或打开本机数据文件夹。
+        </p>
+        <details>
+          <summary>使用独立配置或指定模型</summary>
+          <ol className="settings-instructions">
+            <li>
+              在模型配置文件 <code>.env</code> 中设置 <code>DSH_PROVIDER</code> 选择 Harness 供应商，设置 <code>DEEPSEEK_MODEL</code> 选择该供应商提供的模型。网页版使用项目根目录的配置文件。
+            </li>
+            <li>
+              如需独立连接，可填写 <code>DEEPSEEK_API_KEY</code>、<code>DEEPSEEK_BASE_URL</code> 和 <code>DEEPSEEK_MODEL</code>。独立密钥配置优先使用。
+            </li>
+            <li>重新启动本地服务，然后点击上方的「刷新配置状态」。</li>
+          </ol>
+        </details>
+        <p className="settings-description">
+          密钥只由服务端读取，不会发送到浏览器。使用 Harness 时，无需将密钥复制到项目中。
         </p>
       </div>
       <div className="settings-section">
